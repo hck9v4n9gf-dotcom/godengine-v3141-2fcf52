@@ -1,0 +1,29 @@
+name: enable-pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  pages: write
+  contents: read
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable GitHub Pages from main root
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/tmp/pages.json 2>/tmp/pages.err; then
+            echo "Pages already configured"
+            cat /tmp/pages.json
+            exit 0
+          fi
+          echo "GET pages failed; trying to enable:"
+          cat /tmp/pages.err
+          printf "%s\n" "{\"source\":{\"branch\":\"main\",\"path\":\"/\"}}" > /tmp/pages-source.json
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages" \
+            -H "Accept: application/vnd.github+json" \
+            --input /tmp/pages-source.json
+          echo "POST exit:$?"
